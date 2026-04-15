@@ -1,0 +1,107 @@
+name: Build LuneOS for OnePlus 6
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup build environment
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          git build-essential diffstat texinfo gawk chrpath socat \
+          cpio python3 python3-pip python3-pexpect xz-utils debianutils \
+          iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev \
+          pylint3 xterm python3-subunit mesa-common-dev zstd liblz4-tool
+        
+    - name: Create workspace
+      run: |
+        mkdir -p $HOME/luneos-build
+        cd $HOME/luneos-build
+        
+    - name: Clone LuneOS setup
+      run: |
+        cd $HOME/luneos-build
+        git clone https://github.com/webOS-ports/webos-ports-setup.git
+        cd webos-ports-setup
+        
+    - name: Setup build environment
+      run: |
+        cd $HOME/luneos-build/webos-ports-setup
+        source setup-env
+        
+    - name: Add OnePlus 6 support
+      run: |
+        cd $HOME/luneos-build/webos-ports-setup
+        
+        # 创建设备层目录
+        mkdir -p meta-luneos-oneplus6/conf/machine
+        mkdir -p meta-luneos-oneplus6/recipes-kernel/linux
+        mkdir -p meta-luneos-oneplus6/recipes-support/lxc
+        
+        # 复制配置文件
+        cp $GITHUB_WORKSPACE/conf/machine/oneplus6.conf meta-luneos-oneplus6/conf/machine/
+        cp $GITHUB_WORKSPACE/recipes-kernel/linux/linux-oneplus6_4.9.bb meta-luneos-oneplus6/recipes-kernel/linux/
+        cp $GITHUB_WORKSPACE/recipes-support/lxc/lxc_4.0.bb meta-luneos-oneplus6/recipes-support/lxc/
+        
+    - name: Configure build
+      run: |
+        cd $HOME/luneos-build/webos-ports-setup
+        source setup-env
+        
+        cat > build/conf/local.conf << 'EOF'
+MACHINE = "oneplus6"
+DISTRO = "luneos"
+
+# LXC支持
+IMAGE_INSTALL_append = " lxc lxc-templates"
+
+# 构建优化
+BB_NUMBER_THREADS = "4"
+PARALLEL_MAKE = "-j 4"
+
+# 镜像配置
+IMAGE_ROOTFS_SIZE = "3145728"
+IMAGE_ROOTFS_EXTRA_SPACE = "131072"
+EOF
+        
+    - name: Start build
+      run: |
+        cd $HOME/luneos-build/webos-ports-setup
+        source setup-env
+        # 使用增量构建，只构建变更部分
+        bitbake -c populate_sysroot luneos-image
+        bitbake luneos-image
+      timeout-minutes: 180
+      
+    - name: Generate flashable image
+      run: |
+        cd $HOME/luneos-build/webos-ports-setup
+        source setup-env
+        bitbake luneos-image-sdimg
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: luneos-oneplus6-image
+        path: $HOME/luneos-build/webos-ports-setup/tmp/deploy/images/oneplus6/
+        retention-days: 30
+        
+    - name: Create release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: $HOME/luneos-build/webos-ports-setup/tmp/deploy/images/oneplus6/*.wic*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

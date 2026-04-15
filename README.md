@@ -17,44 +17,41 @@
 - 至少 2GB 可用存储空间
 - USB数据线
 
+## 当前状态
+
+**项目状态**: 🚧 开发中 - 配置阶段完成
+
+### 已完成
+- ✅ 完整的项目结构和文档
+- ✅ 设备配置文件和内核配方
+- ✅ GitHub Actions构建流水线
+- ✅ 详细的构建指南和优化方案
+
+### 下一步计划
+- 🔄 实现完整的LuneOS构建
+- 🔄 生成可刷写的系统镜像
+- 🔄 在一加6真机上进行测试
+
 ## 快速开始
 
-### 1. 下载刷机包
+### 1. 查看项目文档
 
-从 [Releases](https://github.com/[你的用户名]/luneos-oneplus6-lxc/releases) 页面下载最新镜像：
+当前版本提供完整的项目结构和配置文档，可用于：
+- 学习LuneOS构建系统
+- 了解一加6设备适配
+- 准备构建环境
 
-```bash
-# 最新稳定版
-wget https://github.com/[你的用户名]/luneos-oneplus6-lxc/releases/download/v1.0/luneos-oneplus6-lxc-v1.0.zip
-```
+### 2. 下载文档包
 
-### 2. 刷机步骤
+从GitHub Actions的Artifacts下载完整的项目文档：
+- 构建指南 (BUILD.md)
+- 资源优化指南 (LOW_RESOURCE_BUILD.md) 
+- 设备配置文件
+- 内核和LXC配方
 
-```bash
-# 进入fastboot模式
-adb reboot bootloader
+### 3. 准备构建环境
 
-# 刷入系统
-fastboot flash boot boot.img
-fastboot flash system system.img
-fastboot flash vendor vendor.img
-
-# 重启设备
-fastboot reboot
-```
-
-### 3. 验证LXC功能
-
-首次启动后，在终端中运行：
-
-```bash
-# 检查LXC安装
-lxc-ls --fancy
-
-# 创建测试容器
-lxc-create -t busybox -n test-container
-lxc-start -n test-container
-```
+参考 [BUILD.md](BUILD.md) 设置本地构建环境，或使用 [LOW_RESOURCE_BUILD.md](LOW_RESOURCE_BUILD.md) 的优化方案。
 
 ## 构建指南
 

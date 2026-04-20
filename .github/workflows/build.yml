@@ -39,59 +39,52 @@ jobs:
         git clone https://github.com/webOS-ports/webos-ports-setup.git
         cd webos-ports-setup
 
-    - name: Initialize build environment
+    - name: Initialize build environment and build kernel
       run: |
         cd $HOME/luneos-build/webos-ports-setup
         # 创建 conf 目录和 topdir.conf 文件
-        # 使用 shell 变量语法，因为 setup-env 会 source 这个文件
         mkdir -p conf
         echo "TOPDIR=\"\$PWD\"" > conf/topdir.conf
-        # 运行 setup-env
+        # 运行 setup-env 初始化环境
         source setup-env
         echo "TOPDIR after setup-env: $TOPDIR"
-
-    - name: Add OnePlus 6 support layer
-      run: |
-        cd $HOME/luneos-build/webos-ports-setup
-        source setup-env
+        # 如果 TOPDIR 为空，使用当前目录
+        if [ -z "$TOPDIR" ]; then
+          export TOPDIR="$PWD"
+          echo "Set TOPDIR to $TOPDIR"
+        fi
+        
+        # 添加 OnePlus 6 支持层
         mkdir -p meta-luneos-oneplus6/conf/machine
         mkdir -p meta-luneos-oneplus6/recipes-kernel/linux
         mkdir -p meta-luneos-oneplus6/recipes-support/lxc
         cp $GITHUB_WORKSPACE/conf/machine/oneplus6.conf meta-luneos-oneplus6/conf/machine/
         cp $GITHUB_WORKSPACE/recipes-kernel/linux/linux-oneplus6_4.9.bb meta-luneos-oneplus6/recipes-kernel/linux/
         cp $GITHUB_WORKSPACE/recipes-support/lxc/lxc_4.0.bb meta-luneos-oneplus6/recipes-support/lxc/
-
-    - name: Configure build for OnePlus 6
-      run: |
-        cd $HOME/luneos-build/webos-ports-setup
-        source setup-env
+        
+        # 配置 local.conf
         mkdir -p build/conf
-        echo 'MACHINE = "oneplus6"' > build/conf/local.conf
-        echo 'DISTRO = "luneos"' >> build/conf/local.conf
-        echo '' >> build/conf/local.conf
-        echo '# LXC 支持' >> build/conf/local.conf
-        echo 'IMAGE_INSTALL_append = " lxc lxc-templates"' >> build/conf/local.conf
-        echo '' >> build/conf/local.conf
-        echo '# 构建优化' >> build/conf/local.conf
-        echo 'BB_NUMBER_THREADS = "4"' >> build/conf/local.conf
-        echo 'PARALLEL_MAKE = "-j 4"' >> build/conf/local.conf
-        echo '' >> build/conf/local.conf
-        echo '# 镜像配置' >> build/conf/local.conf
-        echo 'IMAGE_ROOTFS_SIZE = "3145728"' >> build/conf/local.conf
-        echo 'IMAGE_ROOTFS_EXTRA_SPACE = "131072"' >> build/conf/local.conf
-        echo '' >> build/conf/local.conf
-        echo '# 减少构建大小' >> build/conf/local.conf
-        echo 'INHERIT += "rm_work"' >> build/conf/local.conf
-        echo 'NO_RECOMMENDATIONS = "1"' >> build/conf/local.conf
+        cat > build/conf/local.conf << 'EOF'
+MACHINE = "oneplus6"
+DISTRO = "luneos"
 
-    - name: Start kernel build
-      run: |
-        cd $HOME/luneos-build/webos-ports-setup
-        source setup-env
-        if [ -z "$TOPDIR" ]; then
-          echo "Error: TOPDIR not set"
-          exit 1
-        fi
+# LXC 支持
+IMAGE_INSTALL_append = " lxc lxc-templates"
+
+# 构建优化
+BB_NUMBER_THREADS = "4"
+PARALLEL_MAKE = "-j 4"
+
+# 镜像配置
+IMAGE_ROOTFS_SIZE = "3145728"
+IMAGE_ROOTFS_EXTRA_SPACE = "131072"
+
+# 减少构建大小
+INHERIT += "rm_work"
+NO_RECOMMENDATIONS = "1"
+EOF
+        
+        echo "开始构建内核..."
         echo "TOPDIR: $TOPDIR"
         BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
         if [ ! -f "$BITBAKE_PATH" ]; then
@@ -103,15 +96,13 @@ jobs:
         fi
         echo "Using bitbake: $BITBAKE_PATH"
         python3 "$BITBAKE_PATH" linux-oneplus6
-      timeout-minutes: 120
 
     - name: Start full system build
       run: |
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
         if [ -z "$TOPDIR" ]; then
-          echo "Error: TOPDIR not set"
-          exit 1
+          export TOPDIR="$PWD"
         fi
         BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
         if [ ! -f "$BITBAKE_PATH" ]; then
@@ -125,8 +116,7 @@ jobs:
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
         if [ -z "$TOPDIR" ]; then
-          echo "Error: TOPDIR not set"
-          exit 1
+          export TOPDIR="$PWD"
         fi
         BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
         if [ ! -f "$BITBAKE_PATH" ]; then

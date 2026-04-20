@@ -42,10 +42,8 @@ jobs:
     - name: Initialize build environment
       run: |
         cd $HOME/luneos-build/webos-ports-setup
-        # 创建必要的配置文件
         mkdir -p conf
         echo 'TOPDIR = "$PWD/build"' > conf/topdir.conf
-        # 首次运行 setup-env 初始化环境
         source setup-env
 
     - name: Add OnePlus 6 support layer
@@ -63,25 +61,24 @@ jobs:
       run: |
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
-        cat > build/conf/local.conf << 'EOF'
-MACHINE = "oneplus6"
-DISTRO = "luneos"
-
-# LXC 支持
-IMAGE_INSTALL_append = " lxc lxc-templates"
-
-# 构建优化
-BB_NUMBER_THREADS = "4"
-PARALLEL_MAKE = "-j 4"
-
-# 镜像配置
-IMAGE_ROOTFS_SIZE = "3145728"
-IMAGE_ROOTFS_EXTRA_SPACE = "131072"
-
-# 减少构建大小
-INHERIT += "rm_work"
-NO_RECOMMENDATIONS = "1"
-EOF
+        mkdir -p build/conf
+        echo 'MACHINE = "oneplus6"' > build/conf/local.conf
+        echo 'DISTRO = "luneos"' >> build/conf/local.conf
+        echo '' >> build/conf/local.conf
+        echo '# LXC 支持' >> build/conf/local.conf
+        echo 'IMAGE_INSTALL_append = " lxc lxc-templates"' >> build/conf/local.conf
+        echo '' >> build/conf/local.conf
+        echo '# 构建优化' >> build/conf/local.conf
+        echo 'BB_NUMBER_THREADS = "4"' >> build/conf/local.conf
+        echo 'PARALLEL_MAKE = "-j 4"' >> build/conf/local.conf
+        echo '' >> build/conf/local.conf
+        echo '# 镜像配置' >> build/conf/local.conf
+        echo 'IMAGE_ROOTFS_SIZE = "3145728"' >> build/conf/local.conf
+        echo 'IMAGE_ROOTFS_EXTRA_SPACE = "131072"' >> build/conf/local.conf
+        echo '' >> build/conf/local.conf
+        echo '# 减少构建大小' >> build/conf/local.conf
+        echo 'INHERIT += "rm_work"' >> build/conf/local.conf
+        echo 'NO_RECOMMENDATIONS = "1"' >> build/conf/local.conf
 
     - name: Start kernel build
       run: |

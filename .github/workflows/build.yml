@@ -42,8 +42,13 @@ jobs:
     - name: Initialize build environment
       run: |
         cd $HOME/luneos-build/webos-ports-setup
+        # 创建 bitbake 配置文件，使用正确的 bitbake 语法
         mkdir -p conf
-        echo 'TOPDIR = "$PWD/build"' > conf/topdir.conf
+        echo 'TOPDIR = "${@os.path.dirname(os.path.abspath(__file__))}/build"' > conf/topdir.conf
+
+    - name: Setup build environment
+      run: |
+        cd $HOME/luneos-build/webos-ports-setup
         source setup-env
 
     - name: Add OnePlus 6 support layer

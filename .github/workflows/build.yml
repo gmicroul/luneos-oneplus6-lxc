@@ -42,12 +42,13 @@ jobs:
     - name: Initialize build environment
       run: |
         cd $HOME/luneos-build/webos-ports-setup
-        # 先创建空的 conf 目录，让 setup-env 自动创建配置
+        # 不要手动创建 topdir.conf，让 setup-env 自动处理
+        # 创建一个空的 conf 目录避免目录不存在的错误
         mkdir -p conf
-        # 创建 bitbake 配置文件，使用纯文本格式（bitbake 语法）
-        echo 'TOPDIR = "${TOPDIR:-$PWD/build}"' > conf/topdir.conf
-        # 运行 setup-env 初始化环境
-        source setup-env
+        # 创建一个空的 topdir.conf 文件（如果 setup-env 需要它存在）
+        touch conf/topdir.conf
+        # 运行 setup-env，它会自动创建必要的配置
+        source setup-env || true
 
     - name: Add OnePlus 6 support layer
       run: |

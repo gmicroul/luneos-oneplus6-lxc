@@ -42,12 +42,11 @@ jobs:
     - name: Initialize build environment
       run: |
         cd $HOME/luneos-build/webos-ports-setup
-        # 创建 conf 目录
+        # 创建 conf 目录和 topdir.conf 文件
+        # 使用 shell 变量语法，因为 setup-env 会 source 这个文件
         mkdir -p conf
-        # 创建一个空的 topdir.conf 避免 "No such file" 错误
-        # setup-env 会覆盖它或正确使用它
-        touch conf/topdir.conf
-        # 运行 setup-env，它会自动处理配置
+        echo "TOPDIR=\"\$PWD\"" > conf/topdir.conf
+        # 运行 setup-env
         source setup-env
         echo "TOPDIR after setup-env: $TOPDIR"
 

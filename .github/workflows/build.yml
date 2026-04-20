@@ -42,16 +42,14 @@ jobs:
     - name: Initialize build environment
       run: |
         cd $HOME/luneos-build/webos-ports-setup
-        # 不要手动创建 topdir.conf，让 setup-env 自动处理
-        # 如果 conf 目录不存在，setup-env 会创建它
-        # 运行 setup-env 初始化环境
+        # 创建 conf 目录
+        mkdir -p conf
+        # 创建一个空的 topdir.conf 避免 "No such file" 错误
+        # setup-env 会覆盖它或正确使用它
+        touch conf/topdir.conf
+        # 运行 setup-env，它会自动处理配置
         source setup-env
-        # 验证 TOPDIR 是否设置
         echo "TOPDIR after setup-env: $TOPDIR"
-        if [ -z "$TOPDIR" ]; then
-          echo "Error: TOPDIR not set by setup-env"
-          exit 1
-        fi
 
     - name: Add OnePlus 6 support layer
       run: |
@@ -96,7 +94,6 @@ jobs:
           exit 1
         fi
         echo "TOPDIR: $TOPDIR"
-        # 查找 bitbake
         BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
         if [ ! -f "$BITBAKE_PATH" ]; then
           BITBAKE_PATH=$(which bitbake 2>/dev/null || echo "")

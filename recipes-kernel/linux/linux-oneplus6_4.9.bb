@@ -3,19 +3,18 @@ LICENSE = "GPL-2.0-only"
 
 inherit kernel
 
-SRC_URI = "git://github.com/LineageOS/android_kernel_oneplus_sdm845.git;branch=lineage-16.0"
+# 使用 HTTPS 协议（GitHub 已不再支持 git://）
+SRC_URI = "git://github.com/LineageOS/android_kernel_oneplus_sdm845.git;branch=lineage-16.0;protocol=https"
 SRCREV = "${AUTOREV}"
 
 S = "${WORKDIR}/git"
 
-# 启用LXC必需的内核选项
-KERNEL_CONFIG_FRAGMENTS += " \
-    ${WORKDIR}/lxc.config \
-"
+# 启用 LXC 必需的内核选项
+KERNEL_CONFIG_FRAGMENTS += " ${WORKDIR}/lxc.config "
 
 do_configure_prepend() {
-    # 创建LXC内核配置片段
-    cat > ${WORKDIR}/lxc.config << 'LXC_CONFIG'
+ # 创建 LXC 内核配置片段
+ cat > ${WORKDIR}/lxc.config << 'LXC_CONFIG'
 CONFIG_NAMESPACES=y
 CONFIG_UTS_NS=y
 CONFIG_IPC_NS=y

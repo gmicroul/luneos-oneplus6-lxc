@@ -42,9 +42,17 @@ jobs:
     - name: Initialize build environment
       run: |
         cd $HOME/luneos-build/webos-ports-setup
+        # 创建正确的 topdir.conf 文件
         mkdir -p conf
-        touch conf/topdir.conf
-        source setup-env || true
+        echo "TOPDIR = \"$PWD\"" > conf/topdir.conf
+        # 运行 setup-env 初始化环境
+        source setup-env
+        # 验证 TOPDIR 是否设置
+        echo "TOPDIR after setup-env: $TOPDIR"
+        if [ -z "$TOPDIR" ]; then
+          echo "Warning: TOPDIR not set, using fallback"
+          export TOPDIR="$PWD"
+        fi
 
     - name: Add OnePlus 6 support layer
       run: |
@@ -84,18 +92,32 @@ jobs:
       run: |
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
-        echo "开始构建内核..."
+        # 如果 TOPDIR 为空，使用当前目录
+        if [ -z "$TOPDIR" ]; then
+          export TOPDIR="$PWD"
+          echo "Set TOPDIR to $TOPDIR"
+        fi
         echo "TOPDIR: $TOPDIR"
         echo "PATH: $PATH"
-        which bitbake || echo "bitbake not found in PATH"
-        ls -la $TOPDIR/poky/bitbake/bin/bitbake 2>/dev/null || echo "bitbake binary not found"
-        # 使用完整路径调用 bitbake
-        export BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
-        if [ -f "$BITBAKE_PATH" ]; then
-          $BITBAKE_PATH linux-oneplus6
+        # 查找 bitbake
+        BITBAKE_PATH=""
+        if [ -f "$TOPDIR/poky/bitbake/bin/bitbake" ]; then
+          BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
+        elif [ -f "$PWD/poky/bitbake/bin/bitbake" ]; then
+          BITBAKE_PATH="$PWD/poky/bitbake/bin/bitbake"
+        elif [ -f "/opt/poky/bitbake/bin/bitbake" ]; then
+          BITBAKE_PATH="/opt/poky/bitbake/bin/bitbake"
         else
-          # 备用方案：直接使用 python 调用
-          python3 $TOPDIR/poky/bitbake/bin/bitbake linux-oneplus6
+          # 尝试在系统中查找
+          BITBAKE_PATH=$(which bitbake 2>/dev/null || echo "")
+        fi
+        
+        if [ -n "$BITBAKE_PATH" ] && [ -f "$BITBAKE_PATH" ]; then
+          echo "Using bitbake: $BITBAKE_PATH"
+          python3 "$BITBAKE_PATH" linux-oneplus6
+        else
+          echo "Error: bitbake not found"
+          exit 1
         fi
       timeout-minutes: 120
 
@@ -103,26 +125,22 @@ jobs:
       run: |
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
-        echo "开始构建完整系统..."
-        export BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
-        if [ -f "$BITBAKE_PATH" ]; then
-          $BITBAKE_PATH luneos-image
-        else
-          python3 $TOPDIR/poky/bitbake/bin/bitbake luneos-image
+        if [ -z "$TOPDIR" ]; then
+          export TOPDIR="$PWD"
         fi
+        BITBAKE_PATH=$(which bitbake 2>/dev/null || echo "$TOPDIR/poky/bitbake/bin/bitbake")
+        python3 "$BITBAKE_PATH" luneos-image
       timeout-minutes: 240
 
     - name: Generate flashable image
       run: |
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
-        echo "生成刷机镜像..."
-        export BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
-        if [ -f "$BITBAKE_PATH" ]; then
-          $BITBAKE_PATH luneos-image-sdimg
-        else
-          python3 $TOPDIR/poky/bitbake/bin/bitbake luneos-image-sdimg
+        if [ -z "$TOPDIR" ]; then
+          export TOPDIR="$PWD"
         fi
+        BITBAKE_PATH=$(which bitbake 2>/dev/null || echo "$TOPDIR/poky/bitbake/bin/bitbake")
+        python3 "$BITBAKE_PATH" luneos-image-sdimg
       timeout-minutes: 60
 
     - name: Upload build artifacts

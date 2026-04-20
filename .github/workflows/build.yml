@@ -33,11 +33,20 @@ jobs:
         mkdir -p $HOME/luneos-build
         cd $HOME/luneos-build
 
-    - name: Clone LuneOS setup
+    - name: Clone webOS-ports setup
       run: |
         cd $HOME/luneos-build
         git clone https://github.com/webOS-ports/webos-ports-setup.git
         cd webos-ports-setup
+        # 初始化子模块 (如果有的话)
+        git submodule update --init --recursive || true
+        # 显示目录结构
+        echo "=== Directory structure ==="
+        ls -la
+        echo "=== Checking for poky ==="
+        ls -la poky 2>/dev/null || echo "poky directory not found"
+        echo "=== Checking for bitbake ==="
+        find . -name "bitbake" -type f 2>/dev/null | head -5 || echo "bitbake not found"
 
     - name: Initialize build environment and build kernel
       run: |
@@ -61,32 +70,36 @@ jobs:
         mkdir -p build/conf
         echo 'MACHINE = "oneplus6"' > build/conf/local.conf
         echo 'DISTRO = "luneos"' >> build/conf/local.conf
-        echo '' >> build/conf/local.conf
-        echo '# LXC 支持' >> build/conf/local.conf
         echo 'IMAGE_INSTALL_append = " lxc lxc-templates"' >> build/conf/local.conf
-        echo '' >> build/conf/local.conf
-        echo '# 构建优化' >> build/conf/local.conf
         echo 'BB_NUMBER_THREADS = "4"' >> build/conf/local.conf
         echo 'PARALLEL_MAKE = "-j 4"' >> build/conf/local.conf
-        echo '' >> build/conf/local.conf
-        echo '# 镜像配置' >> build/conf/local.conf
-        echo 'IMAGE_ROOTFS_SIZE = "3145728"' >> build/conf/local.conf
-        echo 'IMAGE_ROOTFS_EXTRA_SPACE = "131072"' >> build/conf/local.conf
-        echo '' >> build/conf/local.conf
-        echo '# 减少构建大小' >> build/conf/local.conf
         echo 'INHERIT += "rm_work"' >> build/conf/local.conf
         echo 'NO_RECOMMENDATIONS = "1"' >> build/conf/local.conf
         
-        echo "开始构建内核..."
+        echo "=== Starting kernel build ==="
         echo "TOPDIR: $TOPDIR"
-        BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
-        if [ ! -f "$BITBAKE_PATH" ]; then
-          BITBAKE_PATH=$(which bitbake 2>/dev/null || echo "")
+        echo "Current dir: $(pwd)"
+        echo "Looking for bitbake..."
+        
+        # 查找 bitbake
+        BITBAKE_PATH=""
+        if [ -f "$TOPDIR/poky/bitbake/bin/bitbake" ]; then
+          BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
+        elif [ -f "$PWD/poky/bitbake/bin/bitbake" ]; then
+          BITBAKE_PATH="$PWD/poky/bitbake/bin/bitbake"
+        elif [ -f "$PWD/build/poky/bitbake/bin/bitbake" ]; then
+          BITBAKE_PATH="$PWD/build/poky/bitbake/bin/bitbake"
+        else
+          BITBAKE_PATH=$(which bitbake 2>/dev/null || find . -name "bitbake" -type f 2>/dev/null | head -1)
         fi
+        
         if [ -z "$BITBAKE_PATH" ] || [ ! -f "$BITBAKE_PATH" ]; then
-          echo "Error: bitbake not found"
+          echo "Error: bitbake not found in any expected location"
+          echo "Searching..."
+          find . -name "bitbake" 2>/dev/null | head -10
           exit 1
         fi
+        
         echo "Using bitbake: $BITBAKE_PATH"
         python3 "$BITBAKE_PATH" linux-oneplus6
 

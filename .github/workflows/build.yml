@@ -42,18 +42,14 @@ jobs:
     - name: Initialize build environment
       run: |
         cd $HOME/luneos-build/webos-ports-setup
-        # 不要手动创建 topdir.conf，让 setup-env 自动处理
-        # 创建一个空的 conf 目录避免目录不存在的错误
         mkdir -p conf
-        # 创建一个空的 topdir.conf 文件（如果 setup-env 需要它存在）
         touch conf/topdir.conf
-        # 运行 setup-env，它会自动创建必要的配置
         source setup-env || true
 
     - name: Add OnePlus 6 support layer
       run: |
         cd $HOME/luneos-build/webos-ports-setup
-        source setup-env
+        source setup-env || true
         mkdir -p meta-luneos-oneplus6/conf/machine
         mkdir -p meta-luneos-oneplus6/recipes-kernel/linux
         mkdir -p meta-luneos-oneplus6/recipes-support/lxc
@@ -64,7 +60,7 @@ jobs:
     - name: Configure build for OnePlus 6
       run: |
         cd $HOME/luneos-build/webos-ports-setup
-        source setup-env
+        source setup-env || true
         mkdir -p build/conf
         echo 'MACHINE = "oneplus6"' > build/conf/local.conf
         echo 'DISTRO = "luneos"' >> build/conf/local.conf
@@ -89,7 +85,18 @@ jobs:
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
         echo "开始构建内核..."
-        bitbake linux-oneplus6
+        echo "TOPDIR: $TOPDIR"
+        echo "PATH: $PATH"
+        which bitbake || echo "bitbake not found in PATH"
+        ls -la $TOPDIR/poky/bitbake/bin/bitbake 2>/dev/null || echo "bitbake binary not found"
+        # 使用完整路径调用 bitbake
+        export BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
+        if [ -f "$BITBAKE_PATH" ]; then
+          $BITBAKE_PATH linux-oneplus6
+        else
+          # 备用方案：直接使用 python 调用
+          python3 $TOPDIR/poky/bitbake/bin/bitbake linux-oneplus6
+        fi
       timeout-minutes: 120
 
     - name: Start full system build
@@ -97,7 +104,12 @@ jobs:
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
         echo "开始构建完整系统..."
-        bitbake luneos-image
+        export BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
+        if [ -f "$BITBAKE_PATH" ]; then
+          $BITBAKE_PATH luneos-image
+        else
+          python3 $TOPDIR/poky/bitbake/bin/bitbake luneos-image
+        fi
       timeout-minutes: 240
 
     - name: Generate flashable image
@@ -105,7 +117,12 @@ jobs:
         cd $HOME/luneos-build/webos-ports-setup
         source setup-env
         echo "生成刷机镜像..."
-        bitbake luneos-image-sdimg
+        export BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
+        if [ -f "$BITBAKE_PATH" ]; then
+          $BITBAKE_PATH luneos-image-sdimg
+        else
+          python3 $TOPDIR/poky/bitbake/bin/bitbake luneos-image-sdimg
+        fi
       timeout-minutes: 60
 
     - name: Upload build artifacts

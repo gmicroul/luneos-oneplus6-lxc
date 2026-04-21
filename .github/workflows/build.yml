@@ -56,8 +56,9 @@ jobs:
         fi
         
         # 使用 layers.awk 初始化所有 layers
+        # 注意：layers.awk 在父目录的 scripts 目录下
         export OE_SOURCE_DIR="$PWD"
-        env gawk -v command=update -f scripts/layers.awk conf/layers.txt
+        env gawk -v command=update -f ../scripts/layers.awk conf/layers.txt
         
         # 验证关键 layers 是否已下载
         echo "=== Verifying layer downloads ==="

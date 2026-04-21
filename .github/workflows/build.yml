@@ -44,21 +44,26 @@ jobs:
         make setup-common
         make webos-ports/.configured
         
+        # 显示 scripts 目录内容
+        echo "=== Scripts directory ==="
+        ls -la scripts/
+        
+        # 显示 conf/layers.txt 内容
+        echo "=== layers.txt ==="
+        cat conf/layers.txt | head -5
+        
         # 更新 layers (下载 bitbake, openembedded-core 等)
-        cd webos-ports
+        # 必须在 webos-ports-setup 目录下执行，因为 layers.awk 使用相对路径
         echo "Starting layer initialization..."
-        
-        # 检查 layers.txt 是否存在
-        if [ ! -f "conf/layers.txt" ]; then
-          echo "ERROR: layers.txt not found!"
-          ls -la conf/
-          exit 1
-        fi
-        
-        # 使用 layers.awk 初始化所有 layers
-        # 注意：layers.awk 在父目录的 scripts 目录下
         export OE_SOURCE_DIR="$PWD"
-        env gawk -v command=update -f ../scripts/layers.awk conf/layers.txt
+        echo "OE_SOURCE_DIR: $OE_SOURCE_DIR"
+        
+        # 执行 layers.awk 进行更新
+        env gawk -v command=update -f scripts/layers.awk conf/layers.txt
+        
+        # 显示更新后的目录结构
+        echo "=== After update ==="
+        ls -la
         
         # 验证关键 layers 是否已下载
         echo "=== Verifying layer downloads ==="
@@ -69,14 +74,6 @@ jobs:
             echo "✗ $layer MISSING"
           fi
         done
-        
-        # 显示目录结构
-        echo "=== Directory structure ==="
-        ls -la
-        echo "=== Checking for bitbake ==="
-        ls -la bitbake/bin/bitbake 2>/dev/null || echo "bitbake not found"
-        echo "=== Checking openembedded-core ==="
-        ls -la openembedded-core 2>/dev/null || echo "openembedded-core not found"
 
     - name: Initialize build environment and build kernel
       run: |

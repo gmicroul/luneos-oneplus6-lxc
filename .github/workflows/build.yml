@@ -76,16 +76,14 @@ jobs:
         
  # 简化 bblayers.conf 只包含已有的 layers
  echo "=== Simplifying bblayers.conf ==="
- cat > conf/bblayers.conf << 'EOF'
-BBLAYERS = " \
-  $TOPDIR/openembedded-core/meta \
-  $TOPDIR/meta-openembedded/meta-oe \
-  $TOPDIR/meta-openembedded/meta-multimedia \
-  $TOPDIR/meta-openembedded/meta-networking \
-  $TOPDIR/meta-openembedded/meta-python \
-  $TOPDIR/meta-openembedded/meta-filesystems \
-"
-EOF
+ echo 'BBLAYERS = " \' > conf/bblayers.conf
+ echo '  $TOPDIR/openembedded-core/meta \' >> conf/bblayers.conf
+ echo '  $TOPDIR/meta-openembedded/meta-oe \' >> conf/bblayers.conf
+ echo '  $TOPDIR/meta-openembedded/meta-multimedia \' >> conf/bblayers.conf
+ echo '  $TOPDIR/meta-openembedded/meta-networking \' >> conf/bblayers.conf
+ echo '  $TOPDIR/meta-openembedded/meta-python \' >> conf/bblayers.conf
+ echo '  $TOPDIR/meta-openembedded/meta-filesystems \' >> conf/bblayers.conf
+ echo '"' >> conf/bblayers.conf
         
         echo "=== Final directory structure ==="
         ls -la

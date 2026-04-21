@@ -89,10 +89,10 @@ jobs:
         ls -la
         echo "=== Checking bitbake ==="
         ls -la bitbake/bin/bitbake
-        echo "=== Checking openembedded-core ==="
+          echo "=== Checking openembedded-core ==="
         ls -la openembedded-core
-echo "=== Checking meta-openembedded ==="
-ls -la meta-openembedded
+  echo "=== Checking meta-openembedded ==="
+  ls -la meta-openembedded
 
   - name: Initialize build environment and build kernel
   run: |

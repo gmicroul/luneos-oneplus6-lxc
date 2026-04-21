@@ -33,26 +33,33 @@ jobs:
         mkdir -p $HOME/luneos-build
         cd $HOME/luneos-build
 
-    - name: Clone webOS-ports setup
+    - name: Clone webOS-ports setup and initialize layers
       run: |
         cd $HOME/luneos-build
         git clone https://github.com/webOS-ports/webos-ports-setup.git
         cd webos-ports-setup
-        # 初始化子模块 (如果有的话)
-        git submodule update --init --recursive || true
+        
+        # 使用 Makefile 初始化完整环境
+        make setup-common
+        make webos-ports/.configured
+        
+        # 更新 layers (下载 bitbake, openembedded-core 等)
+        cd webos-ports
+        ../scripts/oebb.sh update
+        
         # 显示目录结构
         echo "=== Directory structure ==="
         ls -la
-        echo "=== Checking for poky ==="
-        ls -la poky 2>/dev/null || echo "poky directory not found"
         echo "=== Checking for bitbake ==="
-        find . -name "bitbake" -type f 2>/dev/null | head -5 || echo "bitbake not found"
+        ls -la bitbake/bin/bitbake 2>/dev/null || echo "bitbake not found"
+        echo "=== Checking openembedded-core ==="
+        ls -la openembedded-core 2>/dev/null || echo "openembedded-core not found"
 
     - name: Initialize build environment and build kernel
       run: |
         cd $HOME/luneos-build/webos-ports-setup
         mkdir -p conf
-        echo "TOPDIR=\"\$PWD\"" > conf/topdir.conf
+        echo "TOPDIR=\"$PWD\"" > conf/topdir.conf
         source setup-env
         echo "TOPDIR after setup-env: $TOPDIR"
         if [ -z "$TOPDIR" ]; then
@@ -81,14 +88,12 @@ jobs:
         echo "Current dir: $(pwd)"
         echo "Looking for bitbake..."
         
-        # 查找 bitbake
+        # 查找 bitbake - 现在应该在 webos-ports 目录下
         BITBAKE_PATH=""
-        if [ -f "$TOPDIR/poky/bitbake/bin/bitbake" ]; then
-          BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
-        elif [ -f "$PWD/poky/bitbake/bin/bitbake" ]; then
-          BITBAKE_PATH="$PWD/poky/bitbake/bin/bitbake"
-        elif [ -f "$PWD/build/poky/bitbake/bin/bitbake" ]; then
-          BITBAKE_PATH="$PWD/build/poky/bitbake/bin/bitbake"
+        if [ -f "$PWD/bitbake/bin/bitbake" ]; then
+          BITBAKE_PATH="$PWD/bitbake/bin/bitbake"
+        elif [ -f "$TOPDIR/bitbake/bin/bitbake" ]; then
+          BITBAKE_PATH="$TOPDIR/bitbake/bin/bitbake"
         else
           BITBAKE_PATH=$(which bitbake 2>/dev/null || find . -name "bitbake" -type f 2>/dev/null | head -1)
         fi
@@ -110,7 +115,7 @@ jobs:
         if [ -z "$TOPDIR" ]; then
           export TOPDIR="$PWD"
         fi
-        BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
+        BITBAKE_PATH="$TOPDIR/bitbake/bin/bitbake"
         if [ ! -f "$BITBAKE_PATH" ]; then
           BITBAKE_PATH=$(which bitbake 2>/dev/null || echo "")
         fi
@@ -124,7 +129,7 @@ jobs:
         if [ -z "$TOPDIR" ]; then
           export TOPDIR="$PWD"
         fi
-        BITBAKE_PATH="$TOPDIR/poky/bitbake/bin/bitbake"
+        BITBAKE_PATH="$TOPDIR/bitbake/bin/bitbake"
         if [ ! -f "$BITBAKE_PATH" ]; then
           BITBAKE_PATH=$(which bitbake 2>/dev/null || echo "")
         fi

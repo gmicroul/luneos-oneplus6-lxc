@@ -36,7 +36,8 @@ jobs:
     - name: Clone webOS-ports setup and initialize layers
       run: |
         cd $HOME/luneos-build
-        git clone https://github.com/webOS-ports/webos-ports-setup.git
+        # 克隆 webos-ports-setup 仓库
+        git clone --depth 1 https://github.com/webOS-ports/webos-ports-setup.git
         cd webos-ports-setup
         
         # 使用 Makefile 初始化完整环境
@@ -45,7 +46,14 @@ jobs:
         
         # 更新 layers (下载 bitbake, openembedded-core 等)
         cd webos-ports
-        ../scripts/oebb.sh update
+        echo "Starting layer update..."
+        ../scripts/oebb.sh update || {
+          echo "oebb.sh update failed, trying alternative method..."
+          # 如果 oebb.sh 失败，尝试直接使用 layers.txt 手动初始化
+          cd ..
+          export OE_SOURCE_DIR="$PWD"
+          env gawk -v command=update -f scripts/layers.awk conf/layers.txt
+        }
         
         # 显示目录结构
         echo "=== Directory structure ==="

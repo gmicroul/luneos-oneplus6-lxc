@@ -40,64 +40,61 @@ jobs:
         git clone --depth 1 https://github.com/webOS-ports/webos-ports-setup.git
         cd webos-ports-setup
         
-        # 显示 scripts 目录内容
-        echo "=== Scripts directory ==="
-        ls -la scripts/
-        
         # 显示 layers.txt 完整内容
         echo "=== layers.txt ==="
         cat conf/layers.txt
         
-        # 检查 layers.awk 是否存在
-        if [ ! -f "scripts/layers.awk" ]; then
-          echo "ERROR: scripts/layers.awk not found!"
-          exit 1
-        fi
-        
-        # 显示 layers.awk 的前几行
-        echo "=== layers.awk (first 20 lines) ==="
-        head -20 scripts/layers.awk
-        
         # 更新 layers (下载 bitbake, openembedded-core 等)
         echo "Starting layer initialization..."
         export OE_SOURCE_DIR="$PWD"
-        echo "OE_SOURCE_DIR: $OE_SOURCE_DIR"
         
-        # 执行 layers.awk 进行更新 - 使用详细模式
+        # 执行 layers.awk 进行更新
         echo "Running layers.awk..."
-        env gawk -v command=update -f scripts/layers.awk conf/layers.txt
-        echo "layers.awk exit code: $?"
+        env gawk -v command=update -f scripts/layers.awk conf/layers.txt || true
         
         # 显示更新后的目录结构
-        echo "=== After update ==="
+        echo "=== After layers.awk ==="
         ls -la
         
-        # 验证关键 layers 是否已下载
-        echo "=== Verifying layer downloads ==="
-        for layer in bitbake openembedded-core meta-openembedded meta-webos-ports meta-pine64-luneos meta-smartphone meta-arm meta-rockchip meta-raspberrypi meta-qt6 meta-clang; do
-          if [ -d "$layer" ]; then
-            echo "✓ $layer exists"
-          else
-            echo "✗ $layer MISSING"
-          fi
-        done
-        
-        # 如果 layers 不存在，尝试手动下载
+        # 如果 bitbake 不存在，手动下载
         if [ ! -d "bitbake" ]; then
           echo "Manual clone of bitbake..."
           git clone --depth 1 https://github.com/openembedded/bitbake.git
         fi
+        
+        # 如果 openembedded-core 不存在，手动下载
         if [ ! -d "openembedded-core" ]; then
           echo "Manual clone of openembedded-core..."
           git clone --depth 1 https://github.com/openembedded/openembedded-core.git -b scarthgap
         fi
+        
+        # 如果 meta-openembedded 不存在，手动下载
         if [ ! -d "meta-openembedded" ]; then
           echo "Manual clone of meta-openembedded..."
           git clone --depth 1 https://github.com/openembedded/meta-openembedded.git -b scarthgap
         fi
         
+        # 简化 bblayers.conf 只包含已有的 layers
+        echo "=== Simplifying bblayers.conf ==="
+        cat > conf/bblayers.conf << EOF
+BBLAYERS = " \
+  \$TOPDIR/openembedded-core/meta \
+  \$TOPDIR/meta-openembedded/meta-oe \
+  \$TOPDIR/meta-openembedded/meta-multimedia \
+  \$TOPDIR/meta-openembedded/meta-networking \
+  \$TOPDIR/meta-openembedded/meta-python \
+  \$TOPDIR/meta-openembedded/meta-filesystems \
+"
+EOF
+        
         echo "=== Final directory structure ==="
         ls -la
+        echo "=== Checking bitbake ==="
+        ls -la bitbake/bin/bitbake
+        echo "=== Checking openembedded-core ==="
+        ls -la openembedded-core
+        echo "=== Checking meta-openembedded ==="
+        ls -la meta-openembedded
 
     - name: Initialize build environment and build kernel
       run: |

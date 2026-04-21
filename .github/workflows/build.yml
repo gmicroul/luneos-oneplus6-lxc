@@ -74,16 +74,16 @@ jobs:
           git clone --depth 1 https://github.com/openembedded/meta-openembedded.git -b scarthgap
         fi
         
-        # 简化 bblayers.conf 只包含已有的 layers
-        echo "=== Simplifying bblayers.conf ==="
-        cat > conf/bblayers.conf << EOF
+ # 简化 bblayers.conf 只包含已有的 layers
+ echo "=== Simplifying bblayers.conf ==="
+ cat > conf/bblayers.conf << 'EOF'
 BBLAYERS = " \
-  \$TOPDIR/openembedded-core/meta \
-  \$TOPDIR/meta-openembedded/meta-oe \
-  \$TOPDIR/meta-openembedded/meta-multimedia \
-  \$TOPDIR/meta-openembedded/meta-networking \
-  \$TOPDIR/meta-openembedded/meta-python \
-  \$TOPDIR/meta-openembedded/meta-filesystems \
+  $TOPDIR/openembedded-core/meta \
+  $TOPDIR/meta-openembedded/meta-oe \
+  $TOPDIR/meta-openembedded/meta-multimedia \
+  $TOPDIR/meta-openembedded/meta-networking \
+  $TOPDIR/meta-openembedded/meta-python \
+  $TOPDIR/meta-openembedded/meta-filesystems \
 "
 EOF
         

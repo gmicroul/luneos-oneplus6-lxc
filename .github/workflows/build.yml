@@ -46,14 +46,28 @@ jobs:
         
         # 更新 layers (下载 bitbake, openembedded-core 等)
         cd webos-ports
-        echo "Starting layer update..."
-        ../scripts/oebb.sh update || {
-          echo "oebb.sh update failed, trying alternative method..."
-          # 如果 oebb.sh 失败，尝试直接使用 layers.txt 手动初始化
-          cd ..
-          export OE_SOURCE_DIR="$PWD"
-          env gawk -v command=update -f scripts/layers.awk conf/layers.txt
-        }
+        echo "Starting layer initialization..."
+        
+        # 检查 layers.txt 是否存在
+        if [ ! -f "conf/layers.txt" ]; then
+          echo "ERROR: layers.txt not found!"
+          ls -la conf/
+          exit 1
+        fi
+        
+        # 使用 layers.awk 初始化所有 layers
+        export OE_SOURCE_DIR="$PWD"
+        env gawk -v command=update -f scripts/layers.awk conf/layers.txt
+        
+        # 验证关键 layers 是否已下载
+        echo "=== Verifying layer downloads ==="
+        for layer in bitbake openembedded-core meta-openembedded meta-webos-ports meta-pine64-luneos meta-smartphone meta-arm meta-rockchip meta-raspberrypi meta-qt6 meta-clang; do
+          if [ -d "$layer" ]; then
+            echo "✓ $layer exists"
+          else
+            echo "✗ $layer MISSING"
+          fi
+        done
         
         # 显示目录结构
         echo "=== Directory structure ==="
